@@ -1,5 +1,7 @@
-/- It is fine to import all of Mathlib in your project.
-This might make the loading time of a file a bit longer. If you want a good chunk of Mathlib, but not everything, you can `import Mathlib.Tactic` and then add more imports as necessary. -/
+/-Our contribution starts at Line 317. The first 316 lines of code were copied from
+https://github.com/leanprover-community/mathlib4/blob/rida/orientableManifolds/Mathlib/Geometry/Manifold/Orientable.lean
+where key definitions and basic results on the theory of orientability of manifolds are defined.
+-/
 import Mathlib.Data.Real.StarOrdered
 import Mathlib.Data.Set.Card
 import Mathlib.Geometry.Manifold.SmoothManifoldWithCorners
@@ -8,13 +10,8 @@ import Mathlib.MeasureTheory.Function.Jacobian
 import Mathlib.Topology.Compactness.PseudometrizableLindelof
 import Mathlib.Topology.EMetricSpace.Paracompact
 
-/- open namespaces that you use to shorten names and enable notation. -/
 open Function Set Classical Filter
 
-/- recommended whenever you define anything new. -/
-noncomputable section
-
-/- Now write definitions and theorems. -/
 section General
 
 
@@ -73,10 +70,11 @@ singular homology). In the future, it would be nice to generalise these definiti
 topological manifolds also, and relate them to the current definition.
 
 -/
-
-variable {H : Type*} [NormedAddCommGroup H] [NormedSpace ℝ H]
+end General
 
 section OrientationPreserving
+variable {H : Type*} [NormedAddCommGroup H] [NormedSpace ℝ H]
+
 /--
 A map between normed spaces is orientation-preserving on a given set if it is differentiable and the
 determinant of its Jacobian is strictly positive on that set.
@@ -262,9 +260,9 @@ theorem symm_trans_mem_orientationPreservingGroupoid [FiniteDimensional ℝ E]
 
 end OrientationPreserving
 
-/-! ### Orientable manifolds -/
-
 section OrientableManifold
+
+/-! ### Orientable manifolds -/
 
 /-- Typeclass defining orientable manifolds: a finite-dimensional (topological) manifold
 is orientable if and only if it admits an orientable atlas. -/
@@ -314,6 +312,12 @@ instance {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
     {I : ModelWithCorners ℝ E E} : OrientableSmoothManifold I E :=
   { hasGroupoid_model_space _ _ with }
 
+end OrientableManifold
+
+section ProductofOrientables
+
+/-! ### Product of orientable manifolds -/
+
 namespace SmoothManifoldWithCorners
 
 /-The determinant of the Cartesian product of endomorphisms equals the product of their corresponding
@@ -322,25 +326,25 @@ lemma det_prod
   {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
    [FiniteDimensional ℝ E] [FiniteDimensional ℝ F]
-  (f : E →L[ℝ] E) (g : F →L[ℝ] F) : (f.prodMap g).det = f.det * g.det := by {
+  (A : E →L[ℝ] E) (B : F →L[ℝ] F) : (A.prodMap B).det = A.det * B.det := by {
 
     let bE := Basis.ofVectorSpace ℝ E
     let bF := Basis.ofVectorSpace ℝ F
-    let A := LinearMap.toMatrix bE bE f
-    let B := LinearMap.toMatrix bF bF g
-    let C := LinearMap.toMatrix (bE.prod bF) (bE.prod bF) (f.prodMap g)
+    let A' := LinearMap.toMatrix bE bE A
+    let B' := LinearMap.toMatrix bF bF B
+    let C := LinearMap.toMatrix (bE.prod bF) (bE.prod bF) (A.prodMap B)
 
-    have h₁ : f.det =  A.det := by exact Eq.symm (LinearMap.det_toMatrix bE ↑f)
-    have h₂ : g.det = B.det := by exact Eq.symm (LinearMap.det_toMatrix bF ↑g)
-    have h : (f.prodMap g).det = (Matrix.fromBlocks A 0 0 B).det := by{
-      have hh : C = Matrix.fromBlocks A 0 0 B := by apply LinearMap.toMatrix_prodMap
-      have hhh : C.det = (Matrix.fromBlocks A 0 0 B).det := by exact congrArg Matrix.det hh
+    have h₁ : A.det =  A'.det := by exact Eq.symm (LinearMap.det_toMatrix bE ↑A)
+    have h₂ : B.det = B'.det := by exact Eq.symm (LinearMap.det_toMatrix bF ↑B)
+    have h : (A.prodMap B).det = (Matrix.fromBlocks A' 0 0 B').det := by{
+      have hh : C = Matrix.fromBlocks A' 0 0 B' := by apply LinearMap.toMatrix_prodMap
+      have hhh : C.det = (Matrix.fromBlocks A' 0 0 B').det := by exact congrArg Matrix.det hh
       rw[← hhh]
-      exact Eq.symm (LinearMap.det_toMatrix (bE.prod bF) ↑(f.prodMap g))
+      exact Eq.symm (LinearMap.det_toMatrix (bE.prod bF) ↑(A.prodMap B))
     }
 
     rw[h₁,h₂,h]
-    exact Matrix.det_fromBlocks_zero₁₂ A 0 B
+    exact Matrix.det_fromBlocks_zero₁₂ A' 0 B'
   }
 
 /-The image of the Cartesian product of two sets `s` and `t` under the Cartesian product of two maps
@@ -369,71 +373,75 @@ lemma orientationPreserving_of_prod
   {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
   [FiniteDimensional ℝ E] [FiniteDimensional ℝ F]
-  {f₁ : E → E} {f₂ : F → F} (se : Set E) (sf : Set F)
-  (ho₁ : OrientationPreserving f₁ se) (ho₂ : OrientationPreserving f₂ sf):
-    OrientationPreserving (Prod.map f₁ f₂) (se ×ˢ sf) := by{
+  {f : E → E} {g : F → F} (U : Set E) (V : Set F)
+  (hof : OrientationPreserving f U) (hog : OrientationPreserving g V):
+    OrientationPreserving (Prod.map f g) (U ×ˢ V) := by{
 
       intro x hx
-      have derprod : fderiv ℝ (Prod.map f₁ f₂) x = ((fderiv ℝ f₁ x.1).prodMap (fderiv ℝ f₂ x.2)) := by exact HasFDerivAt.fderiv (HasFDerivAt.prodMap x (DifferentiableAt.hasFDerivAt (OrientationPreserving.differentiableAt ho₁ (Set.mem_preimage.mp (Set.mem_of_mem_inter_left hx)))) (DifferentiableAt.hasFDerivAt (OrientationPreserving.differentiableAt ho₂ (Set.mem_preimage.mp (Set.mem_of_mem_inter_right hx)))))
+      have derprod : fderiv ℝ (Prod.map f g) x = ((fderiv ℝ f x.1).prodMap (fderiv ℝ g x.2)) := by exact HasFDerivAt.fderiv (HasFDerivAt.prodMap x (DifferentiableAt.hasFDerivAt (OrientationPreserving.differentiableAt hof (Set.mem_preimage.mp (Set.mem_of_mem_inter_left hx)))) (DifferentiableAt.hasFDerivAt (OrientationPreserving.differentiableAt hog (Set.mem_preimage.mp (Set.mem_of_mem_inter_right hx)))))
       rw[derprod,det_prod]
-      apply mul_pos (ho₁ x.1 (Set.mem_preimage.mp (Set.mem_of_mem_inter_left hx))) (ho₂ x.2 (Set.mem_preimage.mp (Set.mem_of_mem_inter_right hx)))
+      apply mul_pos (hof x.1 (Set.mem_preimage.mp (Set.mem_of_mem_inter_left hx))) (hog x.2 (Set.mem_preimage.mp (Set.mem_of_mem_inter_right hx)))
     }
 
-/-The Cartesian product of orientation preserving smooth functions on model spaces is orientation
-  preserving and smooth on the model product space.-/
+/-The Cartesian product of smooth, orientation-preserving partial homeomorphisms on model spaces is
+  a smooth, orientation-preserving partial homeomorphism on the model product space-/
 theorem orientableGroupoid_prod
     {E  : Type*} [NormedAddCommGroup E ] [NormedSpace ℝ E ] [FiniteDimensional ℝ E ]
     {E' : Type*} [NormedAddCommGroup E'] [NormedSpace ℝ E'] [FiniteDimensional ℝ E']
-    {H  : Type*} [TopologicalSpace H ] {I  : ModelWithCorners ℝ E  H } {e  : PartialHomeomorph H  H }
-    {H' : Type*} [TopologicalSpace H'] {I' : ModelWithCorners ℝ E' H'} {e' : PartialHomeomorph H' H'}
-    (he : e  ∈ contDiffOrientationPreservingGroupoid ⊤ I )
-    (he': e' ∈ contDiffOrientationPreservingGroupoid ⊤ I') :
-    e.prod e' ∈ contDiffOrientationPreservingGroupoid ⊤ (I.prod I') := by{
+    {H  : Type*} [TopologicalSpace H ] {I  : ModelWithCorners ℝ E  H } {τ  : PartialHomeomorph H  H }
+    {H' : Type*} [TopologicalSpace H'] {I' : ModelWithCorners ℝ E' H'} {τ' : PartialHomeomorph H' H'}
+    (he : τ  ∈ contDiffOrientationPreservingGroupoid ⊤ I )
+    (he': τ' ∈ contDiffOrientationPreservingGroupoid ⊤ I') :
+    τ.prod τ' ∈ contDiffOrientationPreservingGroupoid ⊤ (I.prod I') := by{
 
   constructor
   rcases he with ⟨⟨⟨hor1,hor2⟩,⟨hor_symm1,hor_symm2⟩⟩,hder⟩
   rcases he' with ⟨⟨⟨hor1',hor2'⟩,⟨hor'_symm1,hor'_symm2⟩⟩ ,hder'⟩
   constructor <;> simp only [PartialEquiv.prod_source, PartialHomeomorph.prod_toPartialEquiv,
     orientationPreservingPregroupoid]
-  · have ye : ↑(I.prod I') ∘ ↑(e.prod e') ∘ ↑(I.prod I').symm = (Prod.map (↑I ∘ ↑e ∘ ↑I.symm) (↑I' ∘ ↑e' ∘ ↑I'.symm)) := by rfl
+  · have ye : ↑(I.prod I') ∘ ↑(τ.prod τ') ∘ ↑(I.prod I').symm = (Prod.map (↑I ∘ ↑τ ∘ ↑I.symm) (↑I' ∘ ↑τ' ∘ ↑I'.symm)) := by rfl
     have bey1 : (range ↑(I.prod I')) = (range ↑I).prod (range ↑I') := by apply Set.range_prod_map
     have bey : interior (range ↑(I.prod I')) = (interior (range ↑I)).prod (interior (range ↑I')) := by rw[bey1]; apply interior_prod_eq
-    have th : (↑(I.prod I').symm ⁻¹' e.source ×ˢ e'.source) ∩ (interior (range ↑(I.prod I'))) =
-        ((↑I.symm ⁻¹' e.source).prod (↑I'.symm ⁻¹' e'.source)) ∩ (interior (range ↑I)).prod (interior (range ↑I')) := by exact congrArg (Inter.inter (↑(I.prod I').symm ⁻¹' e.source ×ˢ e'.source)) bey
-    have yebi : ((↑I.symm ⁻¹' e.source).prod (↑I'.symm ⁻¹' e'.source)) ∩ (interior (range ↑I)).prod (interior (range ↑I')) =
-        ((↑I.symm ⁻¹' e.source) ∩ (interior (range ↑I))).prod ((↑I'.symm ⁻¹' e'.source) ∩ (interior (range ↑I'))) := by apply Set.prod_inter_prod
+    have th : (↑(I.prod I').symm ⁻¹' τ.source ×ˢ τ'.source) ∩ (interior (range ↑(I.prod I'))) =
+        ((↑I.symm ⁻¹' τ.source).prod (↑I'.symm ⁻¹' τ'.source)) ∩ (interior (range ↑I)).prod (interior (range ↑I')) := by exact congrArg (Inter.inter (↑(I.prod I').symm ⁻¹' τ.source ×ˢ τ'.source)) bey
+    have yebi : ((↑I.symm ⁻¹' τ.source).prod (↑I'.symm ⁻¹' τ'.source)) ∩ (interior (range ↑I)).prod (interior (range ↑I')) =
+        ((↑I.symm ⁻¹' τ.source) ∩ (interior (range ↑I))).prod ((↑I'.symm ⁻¹' τ'.source) ∩ (interior (range ↑I'))) := by apply Set.prod_inter_prod
     rw [ye,th,yebi]
     constructor
     · apply orientationPreserving_of_prod; exact hor1; exact hor1'
-    · have heh : (Prod.map (↑I ∘ ↑e ∘ ↑I.symm) (↑I' ∘ ↑e' ∘ ↑I'.symm)) ''
-      ((↑I.symm ⁻¹' e.source ∩ interior (range ↑I)).prod (↑I'.symm ⁻¹' e'.source ∩ interior (range ↑I'))) =
-      ((↑I ∘ ↑e ∘ ↑I.symm) '' (↑I.symm ⁻¹' e.source ∩ interior (range ↑I))).prod ((↑I' ∘ ↑e' ∘ ↑I'.symm) ''
-      (↑I'.symm ⁻¹' e'.source ∩ interior (range ↑I'))) := by apply image_prod_eq_prod_image
+    · have heh : (Prod.map (↑I ∘ ↑τ ∘ ↑I.symm) (↑I' ∘ ↑τ' ∘ ↑I'.symm)) ''
+      ((↑I.symm ⁻¹' τ.source ∩ interior (range ↑I)).prod (↑I'.symm ⁻¹' τ'.source ∩ interior (range ↑I'))) =
+      ((↑I ∘ ↑τ ∘ ↑I.symm) '' (↑I.symm ⁻¹' τ.source ∩ interior (range ↑I))).prod ((↑I' ∘ ↑τ' ∘ ↑I'.symm) ''
+      (↑I'.symm ⁻¹' τ'.source ∩ interior (range ↑I'))) := by apply image_prod_eq_prod_image
       rw[heh,bey]
       apply prod_mono hor2 hor2'
   · have bey1 : range ↑(I.prod I') = (range ↑I).prod (range ↑I') := by apply Set.range_prod_map
     have bey : interior (range ↑(I.prod I')) = (interior (range ↑I)).prod (interior (range ↑I')) := by rw[bey1]; apply interior_prod_eq
-    have th : ↑(I.prod I').symm ⁻¹' (e.prod e').target ∩ interior (range ↑(I.prod I')) =
-        ((↑I.symm ⁻¹' e.target).prod (↑I'.symm ⁻¹' e'.target)) ∩ (interior (range ↑I)).prod (interior (range ↑I')) := by exact congrArg (Inter.inter (↑(I.prod I').symm ⁻¹' e.target ×ˢ e'.target)) bey
-    have yebi : ((↑I.symm ⁻¹' e.target).prod (↑I'.symm ⁻¹' e'.target)) ∩ (interior (range ↑I)).prod (interior (range ↑I')) =
-        ((↑I.symm ⁻¹' e.target) ∩ (interior (range ↑I))).prod ((↑I'.symm ⁻¹' e'.target) ∩ (interior (range ↑I'))) := by apply Set.prod_inter_prod
+    have th : ↑(I.prod I').symm ⁻¹' (τ.prod τ').target ∩ interior (range ↑(I.prod I')) =
+        ((↑I.symm ⁻¹' τ.target).prod (↑I'.symm ⁻¹' τ'.target)) ∩ (interior (range ↑I)).prod (interior (range ↑I')) := by exact congrArg (Inter.inter (↑(I.prod I').symm ⁻¹' τ.target ×ˢ τ'.target)) bey
+    have yebi : ((↑I.symm ⁻¹' τ.target).prod (↑I'.symm ⁻¹' τ'.target)) ∩ (interior (range ↑I)).prod (interior (range ↑I')) =
+        ((↑I.symm ⁻¹' τ.target) ∩ (interior (range ↑I))).prod ((↑I'.symm ⁻¹' τ'.target) ∩ (interior (range ↑I'))) := by apply Set.prod_inter_prod
     constructor
-    · show OrientationPreserving (Prod.map (↑I ∘ ↑e.symm ∘ ↑I.symm) (↑I' ∘ ↑e'.symm ∘ ↑I'.symm))
-            (↑(I.prod I').symm ⁻¹' ((e.prod e').toPartialEquiv).target ∩ interior (range ↑(I.prod I')))
+    · show OrientationPreserving (Prod.map (↑I ∘ ↑τ.symm ∘ ↑I.symm) (↑I' ∘ ↑τ'.symm ∘ ↑I'.symm))
+            (↑(I.prod I').symm ⁻¹' ((τ.prod τ').toPartialEquiv).target ∩ interior (range ↑(I.prod I')))
       rw[th,yebi]
       apply orientationPreserving_of_prod; exact hor_symm1; exact hor'_symm1
-    · show (Prod.map (↑I ∘ ↑e.symm ∘ ↑I.symm) (↑I' ∘ ↑e'.symm ∘ ↑I'.symm)) ''
-      ((↑(I.prod I').symm ⁻¹' ((e.prod e').toPartialEquiv).target) ∩ interior (range ↑(I.prod I'))) ⊆
+    · show (Prod.map (↑I ∘ ↑τ.symm ∘ ↑I.symm) (↑I' ∘ ↑τ'.symm ∘ ↑I'.symm)) ''
+      ((↑(I.prod I').symm ⁻¹' ((τ.prod τ').toPartialEquiv).target) ∩ interior (range ↑(I.prod I'))) ⊆
       interior (range ↑(I.prod I'))
       rw[th,yebi]
-      have heh : (Prod.map (↑I ∘ ↑e.symm ∘ ↑I.symm) (↑I' ∘ ↑e'.symm ∘ ↑I'.symm)) ''
-      (((↑I.symm ⁻¹' e.target) ∩ interior (range ↑I)).prod ((↑I'.symm ⁻¹' e'.target) ∩ interior (range ↑I'))) =
-      ((↑I ∘ ↑e.symm ∘ ↑I.symm) '' ((↑I.symm ⁻¹' e.target) ∩ interior (range ↑I))).prod ((↑I' ∘ ↑e'.symm ∘ ↑I'.symm) ''
-      ((↑I'.symm ⁻¹' (e'.target)) ∩ interior (range ↑I'))) := by apply image_prod_eq_prod_image
+      have heh : (Prod.map (↑I ∘ ↑τ.symm ∘ ↑I.symm) (↑I' ∘ ↑τ'.symm ∘ ↑I'.symm)) ''
+      (((↑I.symm ⁻¹' τ.target) ∩ interior (range ↑I)).prod ((↑I'.symm ⁻¹' τ'.target) ∩ interior (range ↑I'))) =
+      ((↑I ∘ ↑τ.symm ∘ ↑I.symm) '' ((↑I.symm ⁻¹' τ.target) ∩ interior (range ↑I))).prod ((↑I' ∘ ↑τ'.symm ∘ ↑I'.symm) ''
+      ((↑I'.symm ⁻¹' (τ'.target)) ∩ interior (range ↑I'))) := by apply image_prod_eq_prod_image
       rw[heh,bey]
       apply prod_mono hor_symm2 hor'_symm2
   · exact contDiffGroupoid_prod he.2 he'.2
   }
+/-Note that the importance of the last theorem lies in the fact that given a manifold `M` with model
+  `H`, the transition map between coordinate charts of `M` is a smooth partial homeomorphism on `H`
+  (in fact, a diffeomorphism between open subsets of `H`).-/
+
 
 /-The product of two orientable smooth manifolds is an orientable smooth manifold. -/
 theorem orientableManifold_of_product
@@ -498,6 +506,5 @@ theorem orientableManifold_of_product_conv
     }
 
 #min_imports
-#check prodChartedSpace.proof_2
 end SmoothManifoldWithCorners
-end OrientableManifold
+end ProductofOrientables
