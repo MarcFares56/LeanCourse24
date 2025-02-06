@@ -459,98 +459,45 @@ theorem orientableManifold_of_product
         (StructureGroupoid.compatible (contDiffOrientationPreservingGroupoid ⊤ I ) hf1 hg1)
         (StructureGroupoid.compatible (contDiffOrientationPreservingGroupoid ⊤ I') hf2 hg2)
     }
+
+theorem orientableManifold_of_product_conv
+    {E  : Type*} [NormedAddCommGroup E ] [NormedSpace ℝ E ] [FiniteDimensional ℝ E ]
+    -- `E`  is the Euclidean space on which `M`  is modelled.
+    {E' : Type*} [NormedAddCommGroup E'] [NormedSpace ℝ E'] [FiniteDimensional ℝ E']
+    -- `E'` is the Euclidean space on which `M'` is modelled.
+    {H  : Type*} [TopologicalSpace H ] {I  : ModelWithCorners ℝ E  H } (M  : Type*)
+    -- `H`  is the model space (possibly with corners) embedded in `E` .
+    {H' : Type*} [TopologicalSpace H'] {I' : ModelWithCorners ℝ E' H'} (M' : Type*)
+    -- `H'` is the model space (possibly with corners) embedded in `E'`.
+    [TopologicalSpace M ][ChartedSpace H  M ][SmoothManifoldWithCorners I  M ]
+    -- `M`  is a smooth orientable manifold modelled on `H`.
+    [TopologicalSpace M'][ChartedSpace H' M'][SmoothManifoldWithCorners I' M']
+    -- `M'` is a smooth orientable manifold modelled on `H'`.
+    [OrientableSmoothManifold (I.prod I') (M × M')]
+    :
+    (OrientableSmoothManifold I M) ∧ (OrientableSmoothManifold I' M') where
+    left.compatible := by{
+      rintro φ₁ ψ₁ hp hf'
+      by_cases h : ∃ f, f ∈ atlas H' M'
+      · rcases h with ⟨f,hf⟩
+        have : φ₁.prod f ∈ atlas (ModelProd H H') (M × M') := by {
+          sorry
+        }
+        have : (φ₁.prod f).symm.trans (ψ₁.prod f) ∈ contDiffOrientationPreservingGroupoid ⊤ (I.prod I') := by{
+          refine StructureGroupoid.compatible_of_mem_maximalAtlas ?he ?he'
+          · sorry
+          sorry
+        }
+        sorry
+      · sorry
+
+    }
+    right.compatible := by{
+      rintro φ ψ hf hf'
+      sorry
+    }
+
 #min_imports
+#check prodChartedSpace.proof_2
 end SmoothManifoldWithCorners
 end OrientableManifold
-
-
-
-              /-
-      let F₁ : E × F → E := fun (x,y) => f₁ x
-      let F₂ : E × F → F := fun (x,y) => f₂ y
-      have H1 : ContDiffAt ℝ n F₁ x := by exact ContDiffAt.fst'' h1
-      have H2 : ContDiffAt ℝ n F₂ x := by exact ContDiffAt.snd'' h2
-      have hq1 : DifferentiableAt ℝ f₁ x.1 := by exact OrientationPreserving.differentiableAt ho₁ sex
-      have Hq1 : DifferentiableAt ℝ F₁ x := by exact DifferentiableAt.comp' hq1 differentiableAt_fst
-      have hq2 : DifferentiableAt ℝ f₂ x.2 := by exact OrientationPreserving.differentiableAt ho₂ set
-      have Hq2 : DifferentiableAt ℝ F₂ x := by exact DifferentiableAt.comp' hq2 differentiableAt_snd
-      have pro : fderiv ℝ (fun (x : E × F) => (F₁ x, F₂ x)) x = (fderiv ℝ F₁ x).prod (fderiv ℝ F₂ x) := by {
-        apply DifferentiableAt.fderiv_prod
-        · exact Hq1
-        · exact Hq2
-      }-/
-
-/-refine ⟨⟨orientationPreserving_of_prod _ _ h, ?_⟩,
-      orientationPreserving_of_prod _ _ h, ?_⟩
-
-       /-
-      have : fderiv ℝ (fun (x : E × F) => (F₁ x, F₂ x)) x = (fderiv ℝ f₁ x.1).prodMap (fderiv ℝ f₂ x.2) :=
-        by apply?
-      simp [pro]
-      have : fderiv ℝ (Prod.map f₁ f₂) x = fderiv ℝ (fun (x : E × F) => (F₁ x, F₂ x)) x := by rfl
-      simp [this,pro]
-      have mat1 : (fderiv ℝ f₁ x.1).det = Matrix.det (LinearMap.toMatrix b b (fderiv ℝ f₁ x.1)) := by simp
-      have mat2 : (fderiv ℝ f₂ x.2).det = Matrix.det (LinearMap.toMatrix b' b' (fderiv ℝ f₂ x.2)) := by simp
-      have mat12 : ((fderiv ℝ F₁ x).prod (fderiv ℝ F₂ x)).det = Matrix.det (LinearMap.toMatrix (b.prod b') (b.prod b') ((fderiv ℝ F₁ x).prod (fderiv ℝ F₂ x))) := by exact Eq.symm (LinearMap.det_toMatrix (b.prod b') ↑((fderiv ℝ F₁ x).prod (fderiv ℝ F₂ x)))
-      simp
-      have sep : LinearMap.toMatrix (b.prod b') (b.prod b') ((fderiv ℝ F₁ x).prod (fderiv ℝ F₂ x))
-          = Matrix.fromBlocks (LinearMap.toMatrix b b (fderiv ℝ f₁ x.1))
-            0 0 (LinearMap.toMatrix b' b' (fderiv ℝ f₂ x.2)):= by {
-            refine Matrix.ext_iff_blocks.mpr ?_
-            simp
-            constructor
-            · refine Matrix.ext ?left.a
-              · intro i j
-                sorry
-            constructor
-            · refine Eq.symm (Matrix.ext ?right.left.a)
-              · intro i j
-                sorry
-            constructor
-            · refine Eq.symm (Matrix.ext ?right.right.left.a)
-              · intro i j
-                sorry
-            · refine Eq.symm (Matrix.ext ?left.right.right.left.a)
-              · intro i j
-                sorry
-          }
-      have matblock : (Matrix.fromBlocks ((LinearMap.toMatrix b b) ↑(fderiv ℝ f₁ x.1))
-              0 0 ((LinearMap.toMatrix b' b') ↑(fderiv ℝ f₂ x.2))).det
-              = (LinearMap.toMatrix b b (fderiv ℝ f₁ x.1)).det *
-              (LinearMap.toMatrix b' b' (fderiv ℝ f₂ x.2)).det := by
-          apply Matrix.det_fromBlocks_zero₂₁
-      have pos1 : (LinearMap.toMatrix b b (fderiv ℝ f₁ x.1)).det > 0 := by rw[←mat1]; exact ho₁ x.1 sex
-      have pos2 : (LinearMap.toMatrix b' b' (fderiv ℝ f₂ x.2)).det > 0 := by rw[←mat2]; exact ho₂ x.2 set
-      have pp : (Matrix.fromBlocks ((LinearMap.toMatrix b b) ↑(fderiv ℝ f₁ x.1))
-              0 0 ((LinearMap.toMatrix b' b') ↑(fderiv ℝ f₂ x.2))).det > 0 := by rw[matblock]; apply mul_pos pos1 pos2
-      rw[mat12]
-      rw[sep]
-      simp_rw [pp]
-    }
-    #min_imports
-    -/
-    /-have : OrientationPreserving (Prod.map (↑I ∘ ↑e ∘ ↑I.symm) (↑I' ∘ ↑e' ∘ ↑I'.symm)) ((↑I.symm ⁻¹' e.source ∩ range ↑I) ×ˢ (↑I'.symm ⁻¹' e'.source ∩ range ↑I')) := by
-      refine orientationPreserving_of_prod (↑I.symm ⁻¹' e.source ∩ range ↑I) (↑I'.symm ⁻¹' e'.source ∩ range ↑I')
-       (Prod.map (↑I ∘ ↑e ∘ ↑I.symm)
-      (↑I' ∘ ↑e' ∘ ↑I'.symm)) ((↑I.symm ⁻¹' e.source ∩ range ↑I) ×ˢ
-      (↑I'.symm ⁻¹' e'.source ∩ range ↑I')) ?h
-    (se : Set E) (sf : Set F)
-  (ho₁ : OrientationPreserving f₁ se) (ho₂ : OrientationPreserving f₂ sf)
-  (hf₁ : ContDiff ℝ n f₁) (hf₂ : ContDiff ℝ n f₂)
-  h3 : ContDiffOn 𝕜 ⊤ (Prod.map (↑I ∘ ↑e ∘ ↑I.symm) (↑I' ∘ ↑e' ∘ ↑I'.symm))
-  ((↑I.symm ⁻¹' e.source ∩ range ↑I) ×ˢ (↑I'.symm ⁻¹' e'.source ∩ range ↑I'))
-  (se : Set E) (sf : Set F)
-  (ho₁ : OrientationPreserving f₁ se) (ho₂ : OrientationPreserving f₂ sf)
-  (hf₁ : ContDiff ℝ n f₁) (hf₂ : ContDiff ℝ n f₂)
-  -/
-
-
-have hehehe : (↑(I.prod I').symm ⁻¹' e.source ×ˢ e'.source ∩ interior (range ↑(I.prod I'))) = ((↑I.symm ⁻¹' e.source) ∩ (interior (range ↑I))).prod ((↑I'.symm ⁻¹' e'.source) ∩ (interior (range ↑I'))) := by rw[th,yebi]
-      have bou : ↑(I.prod I') ∘ ↑(e.prod e') ∘ ↑(I.prod I').symm '' (↑(I.prod I').symm ⁻¹' e.source ×ˢ e'.source ∩ interior (range ↑(I.prod I'))) =
-        ↑(I.prod I') ∘ ↑(e.prod e') ∘ ↑(I.prod I').symm '' (((↑I.symm ⁻¹' e.source) ∩ (interior (range ↑I))).prod ((↑I'.symm ⁻¹' e'.source) ∩ (interior (range ↑I')))) := by exact congrArg (image (↑(I.prod I') ∘ ↑(e.prod e') ∘ ↑(I.prod I').symm)) hehehe
-
-have yuyu : ↑(I.prod I') ∘ ↑(e.prod e') ∘ ↑(I.prod I').symm = Prod.map (↑I ∘ ↑e ∘ ↑I.symm) (↑I' ∘ ↑e' ∘ ↑I'.symm) := by rfl
-      have yeye : ↑(I.prod I') ∘ ↑(e.prod e') ∘ ↑(I.prod I').symm ''
-        (↑I.symm ⁻¹' e.source ∩ interior (range ↑I)).prod (↑I'.symm ⁻¹' e'.source ∩ interior (range ↑I')) =
-        Prod.map (↑I ∘ ↑e ∘ ↑I.symm) (↑I' ∘ ↑e' ∘ ↑I'.symm) ''
-      (↑I.symm ⁻¹' e.source ∩ interior (range ↑I)).prod (↑I'.symm ⁻¹' e'.source ∩ interior (range ↑I')) := by rfl
