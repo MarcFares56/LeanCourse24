@@ -3,7 +3,7 @@
 Please fill out the following. Fill in the project topic once you have decided.
 ```
 First & last name: Marc Fares
-Project topic: Differential 1-forms
+Project topic: Orientability of products of orientable manifolds
 Partner (optional): Stefano Rocca
 ```
 
