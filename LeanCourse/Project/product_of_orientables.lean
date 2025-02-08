@@ -9,6 +9,7 @@ import Mathlib.LinearAlgebra.FreeModule.PID
 import Mathlib.MeasureTheory.Function.Jacobian
 import Mathlib.Topology.Compactness.PseudometrizableLindelof
 import Mathlib.Topology.EMetricSpace.Paracompact
+import Mathlib.Topology.PartialHomeomorph
 
 open Function Set Classical Filter
 
@@ -468,6 +469,87 @@ theorem orientableManifold_of_product
         (StructureGroupoid.compatible (contDiffOrientationPreservingGroupoid ⊤ I') hf2 hg2)
     }
 
+/-open subset of orientable is orientable-/
+
+variable {E  : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
+         {H  : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ E H}
+         {M  : Type*} [TopologicalSpace M][ChartedSpace H M][SmoothManifoldWithCorners I M]
+         (U: TopologicalSpace.Opens M) [OrientableSmoothManifold I M]
+
+lemma eq_fderiv_of_eq_open {E  : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+      {f : E → E} {g : E → E} {s : Set E} (h1: IsOpen s) (h2: ∀ y ∈ s, f y = g y) :
+      ∀ x ∈ s, fderiv ℝ f x = fderiv ℝ g x := by{
+        intro x hs
+        refine EventuallyEq.fderiv_eq ?h
+        refine eventually_eventuallyEq_nhds.mp ?h.a
+        refine eventually_eventually_nhds.mpr ?h.a.a
+        apply eventually_nhds_iff.mpr ?h.a.a.a
+        use s
+      }
+lemma fderiv_comp_inv {E  : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {H  : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ E H} {s : Set H} (hs : IsOpen s)
+    {x : E} (h : x ∈ ↑I.symm ⁻¹' s ∩ interior (range ↑I)) :
+    fderiv ℝ (↑I ∘ ↑I.symm) x = fderiv ℝ id x := by{
+      have eq : ∀ y ∈ (↑I.symm ⁻¹' s ∩ interior (range ↑I)), (↑I ∘ ↑I.symm) y = id y := by{
+        intro y ⟨h1,h2⟩
+        exact ModelWithCorners.right_inv I (interior_subset h2)
+      }
+      have op : IsOpen (↑I.symm ⁻¹' s ∩ interior (range ↑I)) := by exact IsOpen.inter (IsOpen.preimage (ModelWithCorners.continuous_symm I) hs) (isOpen_interior)
+      apply eq_fderiv_of_eq_open op eq
+      exact h
+    }
+
+theorem ofSet_mem_contDiffOrientableGroupoid {s : Set H} (hs : IsOpen s) :
+    PartialHomeomorph.ofSet s hs ∈ contDiffOrientationPreservingGroupoid ⊤ I := by{
+  constructor
+  · have orientation : PartialHomeomorph.ofSet s hs ∈ orientationPreservingGroupoid I := by{
+      rw [orientationPreservingGroupoid, mem_groupoid_of_pregroupoid]
+      suffices h : OrientationPreserving (↑I ∘ ↑I.symm) (↑I.symm ⁻¹' s ∩ interior (range ↑I)) ∧
+          ↑I.symm ⁻¹' s ∩ interior (range ↑I) ⊆ (fun a ↦ I (I.symm a)) ⁻¹' interior (range ↑I) by{
+        simp [h, orientationPreservingPregroupoid]
+      }
+      constructor
+      · intro x h
+        simp [ContinuousLinearMap.det]
+        have : fderiv ℝ (↑I ∘ ↑I.symm) x = fderiv ℝ id x := by apply fderiv_comp_inv hs h
+        simp_rw [this]
+        apply orientationPreserving_id (↑I.symm ⁻¹' s ∩ interior (range ↑I))
+        exact h
+      · intro x ⟨h1,h2⟩
+        apply mem_preimage.mpr ?right.a
+        rw [ModelWithCorners.right_inv I (interior_subset h2)]
+        exact h2
+      }
+    apply orientation
+  · have smooth : PartialHomeomorph.ofSet s hs ∈ contDiffGroupoid ⊤ I := by{
+        rw [contDiffGroupoid, mem_groupoid_of_pregroupoid]
+        suffices h : ContDiffOn ℝ ⊤ (I ∘ I.symm) (I.symm ⁻¹' s ∩ range I) by
+          simp [h, contDiffPregroupoid]
+        have : ContDiffOn ℝ ⊤ id (univ : Set E) := contDiff_id.contDiffOn
+        exact this.congr_mono (fun x hx => I.right_inv hx.2) (subset_univ _)
+        }
+    apply smooth
+  }
+
+  instance : ClosedUnderRestriction (contDiffOrientationPreservingGroupoid ⊤ I) :=
+  (closedUnderRestriction_iff_id_le _).mpr
+    (by
+      rw [StructureGroupoid.le_iff]
+      rintro e ⟨s, hs, hes⟩
+      apply (contDiffOrientationPreservingGroupoid ⊤ I).mem_of_eqOnSource' _ _ _ hes
+      exact ofSet_mem_contDiffOrientableGroupoid hs)
+
+  theorem orientableManifold_of_open_subset
+    {E  : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
+    {H  : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ E H}
+    (M : Type*) [TopologicalSpace M][ChartedSpace H M][OrientableSmoothManifold I M]
+    (U: TopologicalSpace.Opens M):
+    (OrientableSmoothManifold I U) where
+    compatible := by{
+      rintro φ ψ he hf
+      apply StructureGroupoid.compatible (contDiffOrientationPreservingGroupoid ⊤ I) he hf
+      }
+
 theorem orientableManifold_of_product_conv
     {E  : Type*} [NormedAddCommGroup E ] [NormedSpace ℝ E ] [FiniteDimensional ℝ E ]
     -- `E`  is the Euclidean space on which `M`  is modelled.
@@ -486,25 +568,25 @@ theorem orientableManifold_of_product_conv
     (OrientableSmoothManifold I M) ∧ (OrientableSmoothManifold I' M') where
     left.compatible := by{
       rintro φ₁ ψ₁ hp hf'
-      by_cases h : ∃ f, f ∈ atlas H' M'
-      · rcases h with ⟨f,hf⟩
-        have : φ₁.prod f ∈ atlas (ModelProd H H') (M × M') := by {
-          sorry
-        }
-        have : (φ₁.prod f).symm.trans (ψ₁.prod f) ∈ contDiffOrientationPreservingGroupoid ⊤ (I.prod I') := by{
-          refine StructureGroupoid.compatible_of_mem_maximalAtlas ?he ?he'
-          · sorry
-          sorry
-        }
-        sorry
-      · sorry
-
+      sorry
     }
     right.compatible := by{
       rintro φ ψ hf hf'
       sorry
     }
 
+      /-
+      by_cases h : φ₁.source.Nonempty
+      have : ∃ x, x ∈ φ₁.source := by exact h
+      rcases this with ⟨x,hx⟩
+      let ϕ₁ := chartAt H x
+      by_cases h : ∃ f, f ∈ atlas H' M'
+      · rcases h with ⟨f,hf⟩
+        have : φ₁.prod f ∈ atlas (ModelProd H H') (M × M') := by
+        have : (φ₁.prod f).symm.trans (ψ₁.prod f) ∈ contDiffOrientationPreservingGroupoid ⊤ (I.prod I') := by{
+          refine StructureGroupoid.compatible_of_mem_maximalAtlas ?he ?he'
+          ·
+        }-/
 #min_imports
 end SmoothManifoldWithCorners
 end ProductofOrientables
