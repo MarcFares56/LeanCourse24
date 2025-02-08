@@ -468,14 +468,27 @@ theorem orientableManifold_of_product
         (StructureGroupoid.compatible (contDiffOrientationPreservingGroupoid ⊤ I ) hf1 hg1)
         (StructureGroupoid.compatible (contDiffOrientationPreservingGroupoid ⊤ I') hf2 hg2)
     }
+end SmoothManifoldWithCorners
+end ProductofOrientables
 
-/-open subset of orientable is orientable-/
+section Converse
 
-variable {E  : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
+/-What follows is the beginning of our work on the converse of theorem `orientableManifold_of_product`,
+  namely that a smooth product manifold is orientable precisely when its factors are. This is still
+  work in progress.-/
+
+namespace SmoothManifoldWithCorners
+
+/-We begin by establishing the orientability of open subsets of orientable manifolds.-/
+
+variable {n : ℕ∞}
+         {E  : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
          {H  : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ E H}
          {M  : Type*} [TopologicalSpace M][ChartedSpace H M][SmoothManifoldWithCorners I M]
          (U: TopologicalSpace.Opens M) [OrientableSmoothManifold I M]
 
+/-Given an open subset `s` of a real vector space `E`, functions `f : E → E` and `g : E → E` that
+  agree on `s` have equal Fréchet derivatives on `s`.-/
 lemma eq_fderiv_of_eq_open {E  : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
       {f : E → E} {g : E → E} {s : Set E} (h1: IsOpen s) (h2: ∀ y ∈ s, f y = g y) :
       ∀ x ∈ s, fderiv ℝ f x = fderiv ℝ g x := by{
@@ -486,6 +499,7 @@ lemma eq_fderiv_of_eq_open {E  : Type*} [NormedAddCommGroup E] [NormedSpace ℝ 
         apply eventually_nhds_iff.mpr ?h.a.a.a
         use s
       }
+
 lemma fderiv_comp_inv {E  : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     {H  : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ E H} {s : Set H} (hs : IsOpen s)
     {x : E} (h : x ∈ ↑I.symm ⁻¹' s ∩ interior (range ↑I)) :
@@ -499,8 +513,10 @@ lemma fderiv_comp_inv {E  : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
       exact h
     }
 
-theorem ofSet_mem_contDiffOrientableGroupoid {s : Set H} (hs : IsOpen s) :
-    PartialHomeomorph.ofSet s hs ∈ contDiffOrientationPreservingGroupoid ⊤ I := by{
+/-An identity partial homeomorphism belongs to the groupoid of orientation-preserving `n` times
+  continuously differentiable maps.-/
+lemma ofSet_mem_contDiffOrientableGroupoid {s : Set H} (hs : IsOpen s) :
+    PartialHomeomorph.ofSet s hs ∈ contDiffOrientationPreservingGroupoid n I := by{
   constructor
   · have orientation : PartialHomeomorph.ofSet s hs ∈ orientationPreservingGroupoid I := by{
       rw [orientationPreservingGroupoid, mem_groupoid_of_pregroupoid]
@@ -521,25 +537,28 @@ theorem ofSet_mem_contDiffOrientableGroupoid {s : Set H} (hs : IsOpen s) :
         exact h2
       }
     apply orientation
-  · have smooth : PartialHomeomorph.ofSet s hs ∈ contDiffGroupoid ⊤ I := by{
+  · have smooth : PartialHomeomorph.ofSet s hs ∈ contDiffGroupoid n I := by{
         rw [contDiffGroupoid, mem_groupoid_of_pregroupoid]
-        suffices h : ContDiffOn ℝ ⊤ (I ∘ I.symm) (I.symm ⁻¹' s ∩ range I) by
+        suffices h : ContDiffOn ℝ n (I ∘ I.symm) (I.symm ⁻¹' s ∩ range I) by
           simp [h, contDiffPregroupoid]
-        have : ContDiffOn ℝ ⊤ id (univ : Set E) := contDiff_id.contDiffOn
+        have : ContDiffOn ℝ n id (univ : Set E) := contDiff_id.contDiffOn
         exact this.congr_mono (fun x hx => I.right_inv hx.2) (subset_univ _)
         }
     apply smooth
   }
-
-  instance : ClosedUnderRestriction (contDiffOrientationPreservingGroupoid ⊤ I) :=
+/-The groupoid the groupoid of orientation-preserving `n` times continuously differentiable maps on
+  a topological space H is closed under restriction.-/
+instance instClUnderRestr_contDiffOrientationPreservingGroupoid :
+  ClosedUnderRestriction (contDiffOrientationPreservingGroupoid n I) :=
   (closedUnderRestriction_iff_id_le _).mpr
     (by
       rw [StructureGroupoid.le_iff]
       rintro e ⟨s, hs, hes⟩
-      apply (contDiffOrientationPreservingGroupoid ⊤ I).mem_of_eqOnSource' _ _ _ hes
+      apply (contDiffOrientationPreservingGroupoid n I).mem_of_eqOnSource' _ _ _ hes
       exact ofSet_mem_contDiffOrientableGroupoid hs)
 
-  theorem orientableManifold_of_open_subset
+/-An open subset of a smooth orientable manifold is a smooth orientable manifold.-/
+theorem orientableManifold_of_open_subset
     {E  : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
     {H  : Type*} [TopologicalSpace H] {I : ModelWithCorners ℝ E H}
     (M : Type*) [TopologicalSpace M][ChartedSpace H M][OrientableSmoothManifold I M]
@@ -548,21 +567,17 @@ theorem ofSet_mem_contDiffOrientableGroupoid {s : Set H} (hs : IsOpen s) :
     compatible := by{
       rintro φ ψ he hf
       apply StructureGroupoid.compatible (contDiffOrientationPreservingGroupoid ⊤ I) he hf
-      }
+    }
 
+/-The product of two orientable smooth manifolds is an orientable smooth manifold only if the factor
+  manifolds are smooth and orientable. -/
 theorem orientableManifold_of_product_conv
     {E  : Type*} [NormedAddCommGroup E ] [NormedSpace ℝ E ] [FiniteDimensional ℝ E ]
-    -- `E`  is the Euclidean space on which `M`  is modelled.
     {E' : Type*} [NormedAddCommGroup E'] [NormedSpace ℝ E'] [FiniteDimensional ℝ E']
-    -- `E'` is the Euclidean space on which `M'` is modelled.
     {H  : Type*} [TopologicalSpace H ] {I  : ModelWithCorners ℝ E  H } (M  : Type*)
-    -- `H`  is the model space (possibly with corners) embedded in `E` .
     {H' : Type*} [TopologicalSpace H'] {I' : ModelWithCorners ℝ E' H'} (M' : Type*)
-    -- `H'` is the model space (possibly with corners) embedded in `E'`.
     [TopologicalSpace M ][ChartedSpace H  M ][SmoothManifoldWithCorners I  M ]
-    -- `M`  is a smooth orientable manifold modelled on `H`.
     [TopologicalSpace M'][ChartedSpace H' M'][SmoothManifoldWithCorners I' M']
-    -- `M'` is a smooth orientable manifold modelled on `H'`.
     [OrientableSmoothManifold (I.prod I') (M × M')]
     :
     (OrientableSmoothManifold I M) ∧ (OrientableSmoothManifold I' M') where
@@ -589,4 +604,4 @@ theorem orientableManifold_of_product_conv
         }-/
 #min_imports
 end SmoothManifoldWithCorners
-end ProductofOrientables
+end Converse
