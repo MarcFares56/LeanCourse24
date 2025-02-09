@@ -546,6 +546,7 @@ lemma ofSet_mem_contDiffOrientableGroupoid {s : Set H} (hs : IsOpen s) :
         }
     apply smooth
   }
+
 /-The groupoid the groupoid of orientation-preserving `n` times continuously differentiable maps on
   a topological space H is closed under restriction.-/
 instance instClUnderRestr_contDiffOrientationPreservingGroupoid :
@@ -569,8 +570,76 @@ theorem orientableManifold_of_open_subset
       apply StructureGroupoid.compatible (contDiffOrientationPreservingGroupoid ⊤ I) he hf
     }
 
-/-The product of two orientable smooth manifolds is an orientable smooth manifold only if the factor
-  manifolds are smooth and orientable. -/
+/-A manifold `M` is orientable if its product with the real line is.-/
+lemma orientable_of_product_R {e : ℝ}
+    {E  : Type*} [NormedAddCommGroup E ] [NormedSpace ℝ E ] [FiniteDimensional ℝ E ]
+    {H  : Type*} [TopologicalSpace H ] {I  : ModelWithCorners ℝ E  H } (M  : Type*)
+    [TopologicalSpace M ][ChartedSpace H  M ][SmoothManifoldWithCorners I  M ]
+    [OrientableSmoothManifold (I.prod (modelWithCornersSelf ℝ ℝ)) (M × ℝ)] :
+    OrientableSmoothManifold I M where
+
+    compatible := by{
+      rintro φ ψ he hf
+      have idatlas : (PartialHomeomorph.refl ℝ) ∈ (atlas ℝ ℝ) := by {
+          apply chartedSpaceSelf_atlas.mpr
+          exact rfl
+        }
+      have idorient : ((PartialHomeomorph.refl ℝ).symm.trans (PartialHomeomorph.refl ℝ)) ∈ contDiffOrientationPreservingGroupoid ⊤ (modelWithCornersSelf ℝ ℝ) := by{
+        exact
+          StructureGroupoid.compatible
+            (contDiffOrientationPreservingGroupoid ⊤ (modelWithCornersSelf ℝ ℝ)) rfl rfl
+      }
+      have hi : φ.prod (PartialHomeomorph.refl ℝ) ∈ atlas (ModelProd H ℝ) (M × ℝ) := by exact mem_image2_of_mem he idatlas
+      have hey : ψ.prod (PartialHomeomorph.refl ℝ) ∈ atlas (ModelProd H ℝ) (M × ℝ) := by exact mem_image2_of_mem hf idatlas
+      have orprod : (φ.prod (PartialHomeomorph.refl ℝ)).symm.trans (ψ.prod (PartialHomeomorph.refl ℝ)) ∈
+              contDiffOrientationPreservingGroupoid ⊤ (I.prod (modelWithCornersSelf ℝ ℝ)) := by{
+                exact
+                  StructureGroupoid.compatible
+                    (contDiffOrientationPreservingGroupoid ⊤ (I.prod (modelWithCornersSelf ℝ ℝ))) hi
+                    hey
+              }
+      have prodsep : (φ.prod (PartialHomeomorph.refl ℝ)).symm.trans (ψ.prod (PartialHomeomorph.refl ℝ)) =
+              (φ.symm.trans ψ).prod ((PartialHomeomorph.refl ℝ).symm.trans (PartialHomeomorph.refl ℝ)) := by{
+                      rw [PartialHomeomorph.prod_symm, PartialHomeomorph.prod_trans]
+              }
+      constructor
+      have tu : φ.symm.trans ψ ∈ orientationPreservingGroupoid I := by{
+          constructor <;> simp only [orientationPreservingPregroupoid]
+          constructor
+          · intro y h
+            have yeuh : 0 < (fderiv ℝ (↑I ∘ ↑(φ.symm.trans ψ) ∘ ↑I.symm) y).det * (fderiv ℝ (↑((modelWithCornersSelf ℝ ℝ)) ∘ ↑((PartialHomeomorph.refl ℝ).symm.trans (PartialHomeomorph.refl ℝ)) ∘ ↑((modelWithCornersSelf ℝ ℝ)).symm) e).det:= by{
+              have beuh : (fderiv ℝ (↑I ∘ ↑(φ.symm.trans ψ) ∘ ↑I.symm) y).det *
+                (fderiv ℝ (↑((modelWithCornersSelf ℝ ℝ)) ∘ ↑((PartialHomeomorph.refl ℝ).symm.trans (PartialHomeomorph.refl ℝ))
+                ∘ ↑((modelWithCornersSelf ℝ ℝ)).symm) e).det = (((fderiv ℝ (↑I ∘ ↑(φ.symm.trans ψ) ∘ ↑I.symm) y)).prodMap
+                ((fderiv ℝ (↑((modelWithCornersSelf ℝ ℝ)) ∘ ↑((PartialHomeomorph.refl ℝ).symm.trans (PartialHomeomorph.refl ℝ))
+                ∘ ↑((modelWithCornersSelf ℝ ℝ)).symm) e))).det := by{
+                  exact
+                    Eq.symm
+                      (det_prod (fderiv ℝ (↑I ∘ ↑(φ.symm.trans ψ) ∘ ↑I.symm) y)
+                        (fderiv ℝ
+                          (↑(modelWithCornersSelf ℝ ℝ) ∘
+                            ↑((PartialHomeomorph.refl ℝ).symm.trans (PartialHomeomorph.refl ℝ)) ∘
+                              ↑(modelWithCornersSelf ℝ ℝ).symm)
+                          e))
+                }
+              simp_rw [beuh]
+              sorry
+            }
+            sorry
+          · sorry
+          · sorry
+        }
+      exact tu
+      sorry
+    }
+
+/-A manifold `M` is orientable if its product with the `n`-th Euclidean space is.-/
+
+/-Diffeomorphisms preserve orientability (two diffeomorphic manifolds are either both orientable or
+  both non-orientable).-/
+
+/-The product of two smooth manifolds is an orientable smooth manifold only if the factor manifolds
+  are smooth and orientable. -/
 theorem orientableManifold_of_product_conv
     {E  : Type*} [NormedAddCommGroup E ] [NormedSpace ℝ E ] [FiniteDimensional ℝ E ]
     {E' : Type*} [NormedAddCommGroup E'] [NormedSpace ℝ E'] [FiniteDimensional ℝ E']
@@ -590,18 +659,6 @@ theorem orientableManifold_of_product_conv
       sorry
     }
 
-      /-
-      by_cases h : φ₁.source.Nonempty
-      have : ∃ x, x ∈ φ₁.source := by exact h
-      rcases this with ⟨x,hx⟩
-      let ϕ₁ := chartAt H x
-      by_cases h : ∃ f, f ∈ atlas H' M'
-      · rcases h with ⟨f,hf⟩
-        have : φ₁.prod f ∈ atlas (ModelProd H H') (M × M') := by
-        have : (φ₁.prod f).symm.trans (ψ₁.prod f) ∈ contDiffOrientationPreservingGroupoid ⊤ (I.prod I') := by{
-          refine StructureGroupoid.compatible_of_mem_maximalAtlas ?he ?he'
-          ·
-        }-/
 #min_imports
 end SmoothManifoldWithCorners
 end Converse
