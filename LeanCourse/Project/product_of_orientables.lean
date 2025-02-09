@@ -475,7 +475,22 @@ section Converse
 
 /-What follows is the beginning of our work on the converse of theorem `orientableManifold_of_product`,
   namely that a smooth product manifold is orientable precisely when its factors are. This is still
-  work in progress.-/
+  work in progress.
+
+  We plan to formalize a proof found on StackExchange:
+  https://math.stackexchange.com/questions/550426/product-of-manifolds-orientability/1110566#1110566
+  in the following steps:
+  - Open subset of orientable smooth manifolds are orientable (and obviously smooth).
+  - A manifold `M` is orientable if its product with the real line is.
+  - By induction on the above result, `M` is orientable if its product with a model vector space
+    (namely, a Euclidean `n`-space) is.
+  - Diffeomorphisms (as defined in https://github.com/leanprover-community/mathlib4/blob/a04abe9b91cca2a2275a46fe5277a863d721e611/Mathlib/Geometry/Manifold/Diffeomorph.lean)
+    preserve orientability.
+  - It follows that `M` is orientable if its product with a coordinate chart `U` of some smooth
+    manifold `N` is (since `M × U ≃ M × ℝⁿ`).
+  -/
+/-We conclude that orientability of `M × N` implies the same for `M × U` for any coordinate chart
+  `U ⊆ N` (since this is an open subset of the product), which implies orientability of `M`.-/
 
 namespace SmoothManifoldWithCorners
 
@@ -633,10 +648,30 @@ lemma orientable_of_product_R {e : ℝ}
       sorry
     }
 
-/-A manifold `M` is orientable if its product with the `n`-th Euclidean space is.-/
+/-A manifold `M` is orientable if its product with a model vector space is.-/
+lemma orientable_of_product_E
+    {E  : Type*} [NormedAddCommGroup E ] [NormedSpace ℝ E ] [FiniteDimensional ℝ E ]
+    {F  : Type*} [NormedAddCommGroup F ] [NormedSpace ℝ F ] [FiniteDimensional ℝ F ]
+    {H  : Type*} [TopologicalSpace H ] {I  : ModelWithCorners ℝ E  H } (M  : Type*)
+    [TopologicalSpace M ][ChartedSpace H  M ][SmoothManifoldWithCorners I  M ]
+    [OrientableSmoothManifold (I.prod (modelWithCornersSelf ℝ F)) (M × F)] :
+    OrientableSmoothManifold I M where
+    compatible := by sorry
+
 
 /-Diffeomorphisms preserve orientability (two diffeomorphic manifolds are either both orientable or
   both non-orientable).-/
+lemma orientable_of_diffeomorphic
+    {E  : Type*} [NormedAddCommGroup E ] [NormedSpace ℝ E ] [FiniteDimensional ℝ E ]
+    {E' : Type*} [NormedAddCommGroup E'] [NormedSpace ℝ E'] [FiniteDimensional ℝ E']
+    {H  : Type*} [TopologicalSpace H ] {I  : ModelWithCorners ℝ E  H } (M  : Type*)
+    {H' : Type*} [TopologicalSpace H'] {I' : ModelWithCorners ℝ E' H'} (M' : Type*)
+    [TopologicalSpace M ][ChartedSpace H  M ][OrientableSmoothManifold I  M ]
+    [TopologicalSpace M'][ChartedSpace H' M'][SmoothManifoldWithCorners I' M']
+    (h : Diffeomorph I I' M M') :
+    OrientableSmoothManifold I' M' where
+    compatible := by sorry
+
 
 /-The product of two smooth manifolds is an orientable smooth manifold only if the factor manifolds
   are smooth and orientable. -/
